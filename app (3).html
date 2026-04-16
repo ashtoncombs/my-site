@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SERPENT</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #050708;
+      color: #e8dcc8;
+      font-family: 'Orbitron', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(201,151,58,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(201,151,58,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    nav {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid rgba(201,151,58,0.2);
+      position: relative;
+      z-index: 10;
+      background: rgba(5,7,8,0.9);
+    }
+
+    nav a {
+      color: #5a4e3a;
+      text-decoration: none;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      margin: 0 1rem;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: #f0c060; }
+
+    .game-wrapper {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem 3rem;
+      width: 100%;
+    }
+
+    .game-title {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .game-title h1 {
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      font-weight: 900;
+      color: #f0c060;
+      text-shadow: 0 0 20px rgba(201,151,58,0.6), 0 0 60px rgba(201,151,58,0.3);
+      letter-spacing: 0.3em;
+    }
+
+    .game-title p {
+      font-family: 'Share Tech Mono', monospace;
+      color: #5a4e3a;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      margin-top: 0.3rem;
+    }
+
+    .hud {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      width: 528px;
+    }
+
+    .hud-panel {
+      flex: 1;
+      background: #0d1117;
+      border: 1px solid rgba(201,151,58,0.2);
+      border-radius: 4px;
+      padding: 0.6rem 0.5rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .hud-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, #c9973a, transparent);
+    }
+
+    .hud-label {
+      font-size: 0.5rem;
+      letter-spacing: 0.2em;
+      color: #5a4e3a;
+      text-transform: uppercase;
+      margin-bottom: 0.2rem;
+    }
+
+    .hud-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #f0c060;
+      text-shadow: 0 0 10px rgba(201,151,58,0.6);
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    .canvas-container {
+      position: relative;
+      border: 1px solid rgba(201,151,58,0.3);
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 0 40px rgba(201,151,58,0.08);
+      width: 528px;
+      height: 528px;
+    }
+
+    canvas {
+      display: block;
+      width: 528px;
+      height: 528px;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(5,7,8,0.92);
+      z-index: 10;
+    }
+
+    .overlay.hidden { display: none; }
+
+    .overlay h2 {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #f0c060;
+      text-shadow: 0 0 30px rgba(201,151,58,0.6);
+      letter-spacing: 0.2em;
+      margin-bottom: 0.5rem;
+    }
+
+    .overlay .sub {
+      font-family: 'Share Tech Mono', monospace;
+      color: #5a4e3a;
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      margin-bottom: 2rem;
+      text-align: center;
+      line-height: 2;
+    }
+
+    .final-score {
+      font-size: 3rem;
+      color: #ffe066;
+      text-shadow: 0 0 30px rgba(255,224,102,0.6);
+      font-family: 'Share Tech Mono', monospace;
+      margin-bottom: 0.5rem;
+    }
+
+    .hi-label {
+      font-size: 0.65rem;
+      color: #c9973a;
+      letter-spacing: 0.2em;
+      margin-bottom: 2rem;
+    }
+
+    .play-btn {
+      background: transparent;
+      border: 1px solid #c9973a;
+      color: #f0c060;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      padding: 0.8rem 2.5rem;
+      cursor: pointer;
+      text-transform: uppercase;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+
+    .play-btn:hover {
+      background: #c9973a;
+      color: #050708;
+    }
+
+    .controls-hint {
+      margin-top: 1rem;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      color: #5a4e3a;
+      letter-spacing: 0.1em;
+      text-align: center;
+    }
+
+    .level-flash {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2rem;
+      font-weight: 900;
+      color: #f0c060;
+      text-shadow: 0 0 30px rgba(201,151,58,0.6);
+      pointer-events: none;
+      opacity: 0;
+      z-index: 20;
+      letter-spacing: 0.2em;
+    }
+
+    @keyframes levelAnim {
+      0%   { opacity:0; transform:translate(-50%,-50%) scale(0.5); }
+      30%  { opacity:1; transform:translate(-50%,-50%) scale(1.1); }
+      70%  { opacity:1; transform:translate(-50%,-50%) scale(1); }
+      100% { opacity:0; transform:translate(-50%,-50%) scale(1); }
+    }
+
+    .level-flash.show { animation: levelAnim 1.5s ease forwards; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html">Home</a>
+  <a href="scratch.html">Jewelry</a>
+  <a href="resume.html">Résumé</a>
+</nav>
+
+<div class="game-wrapper">
+  <div class="game-title">
+    <h1>SERPENT</h1>
+    <p>COLLECT GOLD — GROW YOUR SNAKE</p>
+  </div>
+
+  <div class="hud">
+    <div class="hud-panel">
+      <div class="hud-label">Score</div>
+      <div class="hud-value" id="scoreDisplay">0</div>
+    </div>
+    <div class="hud-panel">
+      <div class="hud-label">Level</div>
+      <div class="hud-value" id="levelDisplay">1</div>
+    </div>
+    <div class="hud-panel">
+      <div class="hud-label">High Score</div>
+      <div class="hud-value" id="hiDisplay">0</div>
+    </div>
+    <div class="hud-panel">
+      <div class="hud-label">Length</div>
+      <div class="hud-value" id="lenDisplay">3</div>
+    </div>
+  </div>
+
+  <div class="canvas-container">
+    <canvas id="c" width="528" height="528"></canvas>
+    <div class="level-flash" id="levelFlash"></div>
+
+    <div class="overlay" id="startScreen">
+      <h2>SERPENT</h2>
+      <div class="sub">
+        Use arrow keys or WASD to move.<br/>
+        Collect gold orbs to grow.<br/>
+        Don't hit the walls or yourself.
+      </div>
+      <button class="play-btn" id="startBtn">START GAME</button>
+    </div>
+
+    <div class="overlay hidden" id="overScreen">
+      <h2>GAME OVER</h2>
+      <div class="final-score" id="finalScore">0</div>
+      <div class="hi-label" id="hiLabel">SCORE</div>
+      <button class="play-btn" id="restartBtn">PLAY AGAIN</button>
+    </div>
+
+    <div class="overlay hidden" id="pauseScreen">
+      <h2>PAUSED</h2>
+      <div class="sub">Press P to resume</div>
+    </div>
+  </div>
+
+  <div class="controls-hint">
+    WASD / ARROW KEYS — MOVE &nbsp;|&nbsp; P — PAUSE
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+
+  const CELL = 22;
+  const COLS = 24;
+  const ROWS = 24;
+  // canvas is exactly COLS*CELL x ROWS*CELL = 528x528
+
+  let snake, dx, dy, ndx, ndy, food, score, hiScore, level, gameRunning, gamePaused, gameOver;
+  let lastTime, elapsed, interval;
+  let particles = [];
+  let raf;
+
+  hiScore = parseInt(localStorage.getItem('serpHi') || '0');
+  document.getElementById('hiDisplay').textContent = hiScore;
+
+  function initGame() {
+    snake = [
+      { x: 13, y: 12 },
+      { x: 12, y: 12 },
+      { x: 11, y: 12 },
+    ];
+    dx = 1; dy = 0;
+    ndx = 1; ndy = 0;
+    score = 0;
+    level = 1;
+    interval = 150;
+    elapsed = 0;
+    particles = [];
+    food = placeFood();
+    updateHUD();
+  }
+
+  function placeFood() {
+    let f;
+    do {
+      f = {
+        x: Math.floor(Math.random() * COLS),
+        y: Math.floor(Math.random() * ROWS)
+      };
+    } while (snake.some(s => s.x === f.x && s.y === f.y));
+    return f;
+  }
+
+  function updateHUD() {
+    document.getElementById('scoreDisplay').textContent = score;
+    document.getElementById('levelDisplay').textContent = level;
+    document.getElementById('hiDisplay').textContent = hiScore;
+    document.getElementById('lenDisplay').textContent = snake.length;
+  }
+
+  function startGame() {
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('overScreen').classList.add('hidden');
+    document.getElementById('pauseScreen').classList.add('hidden');
+    initGame();
+    gameRunning = true;
+    gamePaused = false;
+    gameOver = false;
+    lastTime = null;
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(loop);
+  }
+
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('restartBtn').addEventListener('click', startGame);
+
+  function loop(ts) {
+    raf = requestAnimationFrame(loop);
+    if (!gameRunning || gamePaused) { draw(ts); return; }
+
+    if (lastTime === null) lastTime = ts;
+    const dt = ts - lastTime;
+    lastTime = ts;
+
+    elapsed += dt;
+    if (elapsed >= interval) {
+      elapsed -= interval;
+      step();
+    }
+
+    draw(ts);
+  }
+
+  function step() {
+    dx = ndx; dy = ndy;
+
+    const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+    // Wall collision
+    if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
+      doGameOver(); return;
+    }
+
+    // Self collision
+    for (let i = 0; i < snake.length; i++) {
+      if (snake[i].x === head.x && snake[i].y === head.y) {
+        doGameOver(); return;
+      }
+    }
+
+    snake.unshift(head);
+
+    // Ate food?
+    if (head.x === food.x && head.y === food.y) {
+      score += 10;
+      if (score > hiScore) { hiScore = score; localStorage.setItem('serpHi', hiScore); }
+      spawnParticles(food.x, food.y);
+      food = placeFood();
+
+      // Level up every 5 orbs (50 pts)
+      const newLevel = Math.floor(score / 50) + 1;
+      if (newLevel > level) {
+        level = newLevel;
+        interval = Math.max(60, 150 - (level - 1) * 15);
+        flashLevel('LEVEL ' + level);
+      }
+    } else {
+      snake.pop();
+    }
+
+    updateHUD();
+  }
+
+  function doGameOver() {
+    gameRunning = false;
+    if (score > hiScore) { hiScore = score; localStorage.setItem('serpHi', hiScore); }
+    document.getElementById('finalScore').textContent = score;
+    document.getElementById('hiLabel').textContent =
+      score > 0 && score >= parseInt(localStorage.getItem('serpHi') || '0')
+        ? '★ NEW HIGH SCORE ★' : 'HIGH SCORE: ' + hiScore;
+    document.getElementById('overScreen').classList.remove('hidden');
+  }
+
+  function flashLevel(text) {
+    const el = document.getElementById('levelFlash');
+    el.textContent = text;
+    el.classList.remove('show');
+    void el.offsetWidth;
+    el.classList.add('show');
+  }
+
+  // Particles
+  function spawnParticles(gx, gy) {
+    const cx = gx * CELL + CELL / 2;
+    const cy = gy * CELL + CELL / 2;
+    for (let i = 0; i < 10; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1 + Math.random() * 2.5;
+      particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 1,
+        r: 2 + Math.random() * 2
+      });
+    }
+  }
+
+  function draw(ts) {
+    // Clear
+    ctx.fillStyle = '#050708';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Grid
+    ctx.strokeStyle = 'rgba(201,151,58,0.05)';
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x <= COLS; x++) {
+      ctx.beginPath(); ctx.moveTo(x * CELL, 0); ctx.lineTo(x * CELL, canvas.height); ctx.stroke();
+    }
+    for (let y = 0; y <= ROWS; y++) {
+      ctx.beginPath(); ctx.moveTo(0, y * CELL); ctx.lineTo(canvas.width, y * CELL); ctx.stroke();
+    }
+
+    // Snake
+    for (let i = snake.length - 1; i >= 0; i--) {
+      const seg = snake[i];
+      const t = i / snake.length;
+      const isHead = i === 0;
+
+      const gx = seg.x * CELL;
+      const gy = seg.y * CELL;
+
+      if (isHead) {
+        ctx.shadowColor = '#f0c060';
+        ctx.shadowBlur = 16;
+      } else {
+        ctx.shadowBlur = 0;
+      }
+
+      // Color: bright gold head fading to dark copper tail
+      const r = Math.round(240 - t * 100);
+      const g = Math.round(192 - t * 120);
+      const b = Math.round(96 - t * 75);
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+
+      const pad = isHead ? 1 : Math.min(4, 2 + Math.round(t * 3));
+      const size = CELL - pad * 2;
+      const rad = isHead ? 5 : 3;
+
+      // Rounded rectangle
+      ctx.beginPath();
+      ctx.moveTo(gx + pad + rad, gy + pad);
+      ctx.lineTo(gx + pad + size - rad, gy + pad);
+      ctx.quadraticCurveTo(gx + pad + size, gy + pad, gx + pad + size, gy + pad + rad);
+      ctx.lineTo(gx + pad + size, gy + pad + size - rad);
+      ctx.quadraticCurveTo(gx + pad + size, gy + pad + size, gx + pad + size - rad, gy + pad + size);
+      ctx.lineTo(gx + pad + rad, gy + pad + size);
+      ctx.quadraticCurveTo(gx + pad, gy + pad + size, gx + pad, gy + pad + size - rad);
+      ctx.lineTo(gx + pad, gy + pad + rad);
+      ctx.quadraticCurveTo(gx + pad, gy + pad, gx + pad + rad, gy + pad);
+      ctx.closePath();
+      ctx.fill();
+
+      // Scale texture on body
+      if (!isHead && i % 2 === 0 && size > 8) {
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.fillRect(gx + pad + 3, gy + pad + 3, size - 6, size - 6);
+      }
+
+      // Eyes on head
+      if (isHead) {
+        ctx.shadowBlur = 0;
+        const ex1 = gx + (dx === 1 ? 15 : dx === -1 ? 4 : 6);
+        const ey1 = gy + (dy === 1 ? 15 : dy === -1 ? 4 : 6);
+        const ex2 = gx + (dy !== 0 ? 14 : ex1 - gx);
+        const ey2 = gy + (dx !== 0 ? 14 : ey1 - gy);
+
+        ctx.fillStyle = '#050708';
+        ctx.beginPath(); ctx.arc(ex1, ey1, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(ex2, ey2, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(ex1 - 0.5, ey1 - 0.5, 1, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(ex2 - 0.5, ey2 - 0.5, 1, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.shadowBlur = 0;
+
+    // Gold orb (food)
+    if (food) {
+      const pulse = Math.sin((ts || 0) / 300) * 0.3 + 0.7;
+      const fx = food.x * CELL + CELL / 2;
+      const fy = food.y * CELL + CELL / 2;
+      const orbR = 6 + pulse * 2;
+
+      // Outer glow
+      const grd = ctx.createRadialGradient(fx, fy, 0, fx, fy, CELL);
+      grd.addColorStop(0, `rgba(255,220,80,${0.35 * pulse})`);
+      grd.addColorStop(1, 'rgba(255,220,80,0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath(); ctx.arc(fx, fy, CELL, 0, Math.PI * 2); ctx.fill();
+
+      // Orb
+      ctx.shadowColor = '#ffe066';
+      ctx.shadowBlur = 18 * pulse;
+      const orbGrd = ctx.createRadialGradient(fx - orbR * 0.3, fy - orbR * 0.3, 0, fx, fy, orbR);
+      orbGrd.addColorStop(0, '#fff5c0');
+      orbGrd.addColorStop(0.4, '#f0c060');
+      orbGrd.addColorStop(1, '#c08020');
+      ctx.fillStyle = orbGrd;
+      ctx.beginPath(); ctx.arc(fx, fy, orbR, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Shine
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.beginPath(); ctx.arc(fx - orbR * 0.3, fy - orbR * 0.3, orbR * 0.3, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Particles
+    particles = particles.filter(p => p.life > 0);
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      p.vx *= 0.93; p.vy *= 0.93;
+      p.life -= 0.04;
+      ctx.globalAlpha = p.life;
+      ctx.shadowColor = '#f0c060';
+      ctx.shadowBlur = 6;
+      ctx.fillStyle = '#f0c060';
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+    });
+
+    // Vignette
+    const vig = ctx.createRadialGradient(
+      canvas.width / 2, canvas.height / 2, canvas.width * 0.3,
+      canvas.width / 2, canvas.height / 2, canvas.width * 0.8
+    );
+    vig.addColorStop(0, 'transparent');
+    vig.addColorStop(1, 'rgba(5,7,8,0.5)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  // Controls
+  document.addEventListener('keydown', function(e) {
+    switch (e.key) {
+      case 'ArrowUp':    case 'w': case 'W': if (dy !== 1)  { ndx = 0; ndy = -1; } e.preventDefault(); break;
+      case 'ArrowDown':  case 's': case 'S': if (dy !== -1) { ndx = 0; ndy = 1;  } e.preventDefault(); break;
+      case 'ArrowLeft':  case 'a': case 'A': if (dx !== 1)  { ndx = -1; ndy = 0; } e.preventDefault(); break;
+      case 'ArrowRight': case 'd': case 'D': if (dx !== -1) { ndx = 1; ndy = 0;  } e.preventDefault(); break;
+      case 'p': case 'P':
+        if (!gameRunning && !gamePaused) break;
+        gamePaused = !gamePaused;
+        document.getElementById('pauseScreen').classList.toggle('hidden', !gamePaused);
+        if (!gamePaused) lastTime = null;
+        e.preventDefault();
+        break;
+    }
+  });
+
+  // Touch swipe
+  let tx0 = null, ty0 = null;
+  canvas.addEventListener('touchstart', function(e) {
+    tx0 = e.touches[0].clientX; ty0 = e.touches[0].clientY; e.preventDefault();
+  }, { passive: false });
+  canvas.addEventListener('touchend', function(e) {
+    if (tx0 === null) return;
+    const tdx = e.changedTouches[0].clientX - tx0;
+    const tdy = e.changedTouches[0].clientY - ty0;
+    if (Math.abs(tdx) > Math.abs(tdy)) {
+      if (tdx > 20 && dx !== -1) { ndx = 1; ndy = 0; }
+      if (tdx < -20 && dx !== 1) { ndx = -1; ndy = 0; }
+    } else {
+      if (tdy > 20 && dy !== -1) { ndx = 0; ndy = 1; }
+      if (tdy < -20 && dy !== 1) { ndx = 0; ndy = -1; }
+    }
+    tx0 = null; ty0 = null; e.preventDefault();
+  }, { passive: false });
+
+  // Draw initial empty board so it's not blank
+  draw(0);
+</script>
+</body>
+</html>
